@@ -69,14 +69,14 @@ def main():
   torch.cuda.manual_seed(args.seed)
   logging.info('gpu device = {}'.format(args.gpus))
   logging.info("args = %s", args)
-
-  criterion = nn.CrossEntropyLoss()
-  criterion = criterion.cuda()
+  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  criterion = nn.CrossEntropyLoss().to(device)
+  criterion = criterion.to(device)
   model = Network(args.init_channels, CIFAR_CLASSES, args.layers, criterion)
   if torch.cuda.device_count() >= len(args.gpus):
     print("Let's use", torch.cuda.device_count(), "GPUs!")
     model = nn.DataParallel(model,device_ids=args.gpus)
-  model = model.cuda()
+  model = model.to(device)
   logging.info("param size = %fMB", utils.count_parameters_in_MB(model))
 
   optimizer = torch.optim.SGD(
@@ -122,17 +122,17 @@ def main():
     print(F.softmax(model.module.alphas_reduce, dim=-1))
 
     # training
-    train_acc, train_obj = train(train_queue, valid_queue, model, architect, criterion, optimizer, lr)
+    train_acc, train_obj = train(train_queue, valid_queue, model, architect, criterion, optimizer, lr, device)
     logging.info('train_acc %f', train_acc)
 
     # validation
-    valid_acc, valid_obj = infer(valid_queue, model, criterion)
+    valid_acc, valid_obj = infer(valid_queue, model, criterion, device)
     logging.info('valid_acc %f', valid_acc)
 
     utils.save(model, os.path.join(args.save, 'weights.pt'))
 
 
-def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr):
+def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr, device):
   objs = utils.AvgrageMeter()
   top1 = utils.AvgrageMeter()
   top5 = utils.AvgrageMeter()
@@ -141,13 +141,13 @@ def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr):
     model.train()
     n = input.size(0)
 
-    input = input.cuda()
-    target = target.cuda()
+    input = input.to(device)
+    target = target.to(device)
 
     # get a random minibatch from the search queue with replacement
     input_search, target_search = next(iter(valid_queue))
-    input_search = input_search.cuda()
-    target_search = target_search.cuda()
+    input_search = input_search.to(device)
+    target_search = target_search.to(device)
 
     architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled)
 
@@ -170,15 +170,15 @@ def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr):
   return top1.avg, objs.avg
 
 
-def infer(valid_queue, model, criterion):
+def infer(valid_queue, model, criterion, device):
   objs = utils.AvgrageMeter()
   top1 = utils.AvgrageMeter()
   top5 = utils.AvgrageMeter()
   model.eval()
 
   for step, (input, target) in enumerate(valid_queue):
-    input = input.cuda()
-    target = target.cuda()
+    input = input.to(device)
+    target = target.to(device)
 
     logits = model(input)
     loss = criterion(logits, target)
