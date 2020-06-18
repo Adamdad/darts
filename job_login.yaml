@@ -3,7 +3,7 @@ kind: Job # Deployment will automatically restart when killed. Use Pod if not ne
 metadata:
   labels:
     k8s-app: research
-  generateName: xyang-siamese-job
+  generateName: xyang-darts-job
   namespace: ecepxie
 spec:
   template:
@@ -20,12 +20,12 @@ spec:
         command: ["sleep", "infinity"]
         resources:
           requests:
-            memory: "16Gi"
-            cpu: "2"
+            memory: "64Gi"
+            cpu: "8"
             nvidia.com/gpu: 2
           limits:
-            memory: "16Gi"
-            cpu: "2"
+            memory: "64Gi"
+            cpu: "8"
             nvidia.com/gpu: 2
         volumeMounts:
         - mountPath: /ceph
