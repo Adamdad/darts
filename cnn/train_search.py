@@ -82,7 +82,9 @@ def main():
       args.learning_rate,
       momentum=args.momentum,
       weight_decay=args.weight_decay)
-
+  arch_optimizer = torch.optim.Adam(model.arch_parameters(),
+                   lr=args.arch_learning_rate, betas=(0.5, 0.999),
+                   weight_decay=args.arch_weight_decay)
   train_transform, valid_transform = utils._data_transforms_cifar10(args)
   train_data = dset.CIFAR10(root=args.data, train=True, download=True, transform=train_transform)
 
@@ -103,7 +105,7 @@ def main():
   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, float(args.epochs), eta_min=args.learning_rate_min)
 
-  architect = Architect(model, args)
+  architect = Architect(model,arch_optimizer, args)
 
   for epoch in range(args.epochs):
     scheduler.step()
