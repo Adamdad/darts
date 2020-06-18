@@ -37,7 +37,7 @@ class Architect(object):
     self.optimizer.step()
 
   def _backward_step(self, input_valid, target_valid):
-    loss = self.model_loss(input_valid, target_valid)
+    loss = self.model._loss(input_valid, target_valid)
     loss.backward()
 
   def _backward_step_unrolled(self, input_train, target_train, input_valid, target_valid, eta, network_optimizer):
