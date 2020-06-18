@@ -112,7 +112,10 @@ def main():
     lr = scheduler.get_lr()[0]
     logging.info('epoch %d lr %e', epoch, lr)
 
-    genotype = model.genotype()
+    if len(args.gpus)>1:
+      genotype = model.module.genotype()
+    else:
+      genotype = model.genotype()
     logging.info('genotype = %s', genotype)
 
     print(F.softmax(model.alphas_normal, dim=-1))
@@ -138,13 +141,13 @@ def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr):
     model.train()
     n = input.size(0)
 
-    input = Variable(input, requires_grad=False).cuda()
-    target = Variable(target, requires_grad=False).cuda()
+    input = input.cuda()
+    target = target.cuda()
 
     # get a random minibatch from the search queue with replacement
     input_search, target_search = next(iter(valid_queue))
-    input_search = Variable(input_search, requires_grad=False).cuda()
-    target_search = Variable(target_search, requires_grad=False).cuda()
+    input_search = input_search.cuda()
+    target_search = target_search.cuda()
 
     architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled)
 
@@ -174,8 +177,8 @@ def infer(valid_queue, model, criterion):
   model.eval()
 
   for step, (input, target) in enumerate(valid_queue):
-    input = Variable(input, volatile=True).cuda()
-    target = Variable(target, volatile=True).cuda()
+    input = input.cuda()
+    target = target.cuda()
 
     logits = model(input)
     loss = criterion(logits, target)
