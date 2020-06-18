@@ -73,9 +73,7 @@ def main():
   criterion = nn.CrossEntropyLoss().to(device)
   criterion = criterion.to(device)
   model = Network(args.init_channels, CIFAR_CLASSES, args.layers, criterion)
-  if torch.cuda.device_count() >= len(args.gpus):
-    print("Let's use", torch.cuda.device_count(), "GPUs!")
-    model = nn.DataParallel(model,device_ids=args.gpus)
+
   model = model.to(device)
   logging.info("param size = %fMB", utils.count_parameters_in_MB(model))
 
@@ -112,14 +110,12 @@ def main():
     lr = scheduler.get_lr()[0]
     logging.info('epoch %d lr %e', epoch, lr)
 
-    if len(args.gpus)>1:
-      genotype = model.module.genotype()
-    else:
-      genotype = model.genotype()
+
+    genotype = model.genotype()
     logging.info('genotype = %s', genotype)
 
-    print(F.softmax(model.module.alphas_normal, dim=-1))
-    print(F.softmax(model.module.alphas_reduce, dim=-1))
+    print(F.softmax(model.alphas_normal, dim=-1))
+    print(F.softmax(model.alphas_reduce, dim=-1))
 
     # training
     train_acc, train_obj = train(train_queue, valid_queue, model, architect, criterion, optimizer, lr, device)
