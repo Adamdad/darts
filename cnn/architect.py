@@ -10,7 +10,7 @@ def _concat(xs):
 
 class Architect(object):
 
-  def __init__(self, model, criterion, args):
+  def __init__(self, model, args):
     self.network_momentum = args.momentum
     self.network_weight_decay = args.weight_decay
     self.model = model
