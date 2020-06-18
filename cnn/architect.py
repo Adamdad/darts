@@ -24,7 +24,7 @@ class Architect(object):
                                         weight_decay=args.arch_weight_decay)
 
   def _compute_unrolled_model(self, input, target, eta, network_optimizer):
-    loss = self.model._loss(input, target)
+    loss = self.model.module._loss(input, target)
     theta = _concat(self.model.parameters()).data
     try:
       moment = _concat(network_optimizer.state[v]['momentum_buffer'] for v in self.model.parameters()).mul_(self.network_momentum)
@@ -43,22 +43,22 @@ class Architect(object):
     self.optimizer.step()
 
   def _backward_step(self, input_valid, target_valid):
-    loss = self.model._loss(input_valid, target_valid)
+    loss = self.model.module._loss(input_valid, target_valid)
     loss.backward()
 
   def _backward_step_unrolled(self, input_train, target_train, input_valid, target_valid, eta, network_optimizer):
     unrolled_model = self._compute_unrolled_model(input_train, target_train, eta, network_optimizer)
-    unrolled_loss = unrolled_model._loss(input_valid, target_valid)
+    unrolled_loss = unrolled_model.module._loss(input_valid, target_valid)
 
     unrolled_loss.backward()
-    dalpha = [v.grad for v in unrolled_model.arch_parameters()]
+    dalpha = [v.grad for v in unrolled_model.module.arch_parameters()]
     vector = [v.grad.data for v in unrolled_model.parameters()]
     implicit_grads = self._hessian_vector_product(vector, input_train, target_train)
 
     for g, ig in zip(dalpha, implicit_grads):
       g.data.sub_(eta, ig.data)
 
-    for v, g in zip(self.model.arch_parameters(), dalpha):
+    for v, g in zip(self.model.module.arch_parameters(), dalpha):
       if v.grad is None:
         v.grad = Variable(g.data)
       else:
@@ -84,12 +84,12 @@ class Architect(object):
     for p, v in zip(self.model.parameters(), vector):
       p.data.add_(R, v)
     loss = self.model._loss(input, target)
-    grads_p = torch.autograd.grad(loss, self.model.arch_parameters())
+    grads_p = torch.autograd.grad(loss, self.model.module.arch_parameters())
 
     for p, v in zip(self.model.parameters(), vector):
       p.data.sub_(2*R, v)
-    loss = self.model._loss(input, target)
-    grads_n = torch.autograd.grad(loss, self.model.arch_parameters())
+    loss = self.model.module._loss(input, target)
+    grads_n = torch.autograd.grad(loss, self.model.module.arch_parameters())
 
     for p, v in zip(self.model.parameters(), vector):
       p.data.add_(R, v)
