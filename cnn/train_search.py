@@ -137,13 +137,13 @@ def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr, 
     model.train()
     n = input.size(0)
 
-    input = input.to(device)
-    target = target.to(device)
+    input = input.to(device,non_blocking=True)
+    target = target.to(device,non_blocking=True)
 
     # get a random minibatch from the search queue with replacement
     input_search, target_search = next(iter(valid_queue))
-    input_search = input_search.to(device)
-    target_search = target_search.to(device)
+    input_search = input_search.to(device,non_blocking=True)
+    target_search = target_search.to(device,non_blocking=True)
 
     architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled)
 
@@ -173,8 +173,8 @@ def infer(valid_queue, model, criterion, device):
   model.eval()
 
   for step, (input, target) in enumerate(valid_queue):
-    input = input.to(device)
-    target = target.to(device)
+    input = input.to(device,non_blocking=True)
+    target = target.to(device,non_blocking=True)
 
     logits = model(input)
     loss = criterion(logits, target)
